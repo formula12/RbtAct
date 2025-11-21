@@ -1,0 +1,17 @@
+# Core dependencies
+python-dotenv>=1.0.0
+openai>=1.12.0
+pydantic>=2.0.0
+backoff>=2.2.1
+tqdm>=4.65.0
+
+# Data processing
+openreview-py>=1.19.0
+
+# Async support  
+aiohttp>=3.9.0
+asyncio>=3.4.3
+
+# Optional: for specific features
+# Note: Some features may require additional dependencies
+
