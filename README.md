@@ -10,6 +10,7 @@ This project provides tools for collecting, processing, and analyzing academic p
 - **Label1**: Classifying weakness points by perspective 
 - **Label2**: Building preference datasets for rebuttal quality
 - **Mapping**: Mapping review weaknesses to rebuttal responses
+- **training**: Training configs for SFT and DPO training
 
 ## Project Structure
 
@@ -34,7 +35,9 @@ RbtAct/
 │       ├── openai_utils.py
 │       ├── prompts.py
 │       └── review_rebuttal_mapper.py
-└── training/              # (Future) Training scripts
+└── training/
+        ├── llama_8b_review_per_sft.yaml
+│       └── llama_8b_review_per_dpo.yaml
 ```
 
 ## Installation
