@@ -35,9 +35,9 @@ RbtAct/
 │       ├── openai_utils.py
 │       ├── prompts.py
 │       └── review_rebuttal_mapper.py
-└── training/
-        ├── llama_8b_review_per_sft.yaml
-│       └── llama_8b_review_per_dpo.yaml
+├── training/
+│   ├── llama_8b_review_per_sft.yaml
+│   └── llama_8b_review_per_dpo.yaml
 ```
 
 ## Installation
