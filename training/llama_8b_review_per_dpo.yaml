@@ -1,0 +1,44 @@
+# File: llama_8b_review_per_dpo.yaml
+
+# ===== Model =====
+model_name_or_path: xxx/LLaMA-Factory/output/llama3.1-8b-review-per-sft
+template: llama3
+stage: dpo
+do_train: true
+
+# ===== Finetuning =====
+finetuning_type: lora
+lora_target: q_proj,v_proj,k_proj,o_proj,gate_proj,up_proj,down_proj
+lora_rank: 16 
+lora_alpha: 16
+lora_dropout: 0.05
+gradient_checkpointing: true
+
+# ===== Precision / Perf =====
+bf16: true
+attn_implementation: flash_attention_2
+# deepspeed: examples/deepspeed/ds_config.json
+ddp_timeout: 180000000
+
+# ===== Data =====
+dataset_dir: data
+dataset: review_dpo  # see dataset_info.json below
+cutoff_len: 32768
+
+# ===== Preference Learning (DPO) =====
+pref_loss: sigmoid
+pref_beta: 0.1 
+ref_model: xxx/LLaMA-Factory/output/llama3.1-8b-review-per-sft # change according to your path!!!
+ref_model_quantization_bit: 4 
+
+# ===== Train =====
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 16
+learning_rate: 1.0e-5  
+num_train_epochs: 2.0  
+lr_scheduler_type: cosine
+warmup_ratio: 0.05
+logging_steps: 20
+save_steps: 100
+output_dir: xxx/LLaMA-Factory/output/llama3.1-8b-review-per-dpo # change according to your path!!!
+report_to: none

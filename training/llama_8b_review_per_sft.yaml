@@ -1,0 +1,37 @@
+# File: llama_8b_review_per_sft.yaml
+
+# Model and output path config
+model_name_or_path: meta-llama/Meta-Llama-3.1-8B-Instruct
+output_dir: saves/llama3.1-8b-review-per-sft-all/lora/sft  # directory to save training outputs
+
+# Training stage and method
+stage: sft
+do_train: true
+finetuning_type: lora
+
+# Dataset config
+dataset: review_perspective_all  # dataset name registered in dataset_info.json
+template: llama3 
+cutoff_len: 32768           
+max_new_tokens: 1024 
+
+# Training hyperparameters
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 1.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+ddp_timeout: 180000000
+logging_steps: 10
+save_steps: 200
+
+# Precision and performance
+bf16: true  # use bf16 if your GPU supports it
+trust_remote_code: true
+report_to: none
+
+# LoRA configuration
+lora_rank: 8
+lora_alpha: 16
+lora_target: q_proj,v_proj,k_proj,o_proj,gate_proj,up_proj,down_proj
