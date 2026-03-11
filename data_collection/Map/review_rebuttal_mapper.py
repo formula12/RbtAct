@@ -70,10 +70,10 @@ class ReviewRebuttalMapper:
                     ))
                     # print(f"    Point {point_id}: {clean_content[:50]}...")
         else:
-            # 尝试其他格式
+            # try other formats
             # print("  No Point X: format found, trying alternative formats")
             
-            # 尝试数字列表格式 "1. 2. 3."
+            # try numbered list format "1. 2. 3."
             pattern_numbered = r'(\d+)\.\s*(.*?)(?=\d+\.|$)'
             numbered_matches = re.findall(pattern_numbered, result_text, re.DOTALL)
             
@@ -88,7 +88,7 @@ class ReviewRebuttalMapper:
                         ))
                         # print(f"    Point {point_id}: {clean_content[:50]}...")
             else:
-                # 尝试bullet points格式
+                # try bullet points format
                 pattern_bullet = r'^[-*+]\s*(.*?)(?=^[-*+]|$)'
                 bullet_matches = re.findall(pattern_bullet, result_text, re.MULTILINE | re.DOTALL)
                 
@@ -103,11 +103,11 @@ class ReviewRebuttalMapper:
                             ))
                             # print(f"    Point {i}: {clean_content[:50]}...")
                 else:
-                    # 最后尝试按段落分割
+                    # try last resort: split by paragraphs
                     # print("  No structured format found, trying paragraph splitting")
                     paragraphs = [p.strip() for p in result_text.split('\n\n') if p.strip()]
                     for i, paragraph in enumerate(paragraphs, 1):
-                        if len(paragraph) > 20:  # 过滤太短的段落
+                        if len(paragraph) > 20:  # filter out too short paragraphs
                             points.append(WeaknessPoint(
                                 id=f"P{i}",
                                 content=paragraph

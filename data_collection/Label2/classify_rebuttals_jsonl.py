@@ -5,8 +5,6 @@ from collections import defaultdict, Counter
 from openai import AsyncOpenAI, OpenAIError
 from tqdm.asyncio import tqdm
 
-# D:\anaconda3\envs\literature\python.exe classify_rebuttals_jsonl.py --in_path rebuttals.jsonl --out_path rebuttals_labeled.jsonl --model gpt-5-mini --rpm 2000 --concurrency 10
-
 LABELS = [
     "CRP",  # Concrete Revision Provided
     "SRP",  # Specific Revision Plan
@@ -71,7 +69,7 @@ def fallback_rule(content: str) -> str:
         for p in pats:
             if re.search(p, text):
                 return label
-    # Default most conservative: VCR
+    # Default to the most conservative label: VCR
     return "VCR"
 
 # ---- Async client with rate limiting ----
@@ -130,19 +128,19 @@ class Classifier:
                 
                 # Check if truncated due to length limit
                 if choice.finish_reason == 'length':
-                    print(f"⚠️ API response truncated (finish_reason=length), using keyword fallback rules", file=sys.stderr)
+                    print(f"⚠️ API response truncated (finish_reason=length), using keyword fallback", file=sys.stderr)
                     self.fallback_calls += 1
                     return fallback_rule(content), True
                 
                 if not content_text or not content_text.strip():
-                    print(f"⚠️ API returned empty content (finish_reason={choice.finish_reason}), using keyword fallback rules", file=sys.stderr)
+                    print(f"⚠️ API returned empty content (finish_reason={choice.finish_reason}), using keyword fallback", file=sys.stderr)
                     self.fallback_calls += 1
                     return fallback_rule(content), True
                 
                 try:
                     data = json.loads(content_text)
                 except json.JSONDecodeError as e:
-                    print(f"⚠️ JSON解析失败，API返回内容: '{content_text[:100]}...'，使用关键词兜底规则", file=sys.stderr)
+                    print(f"⚠️ JSON parse failed. API returned: '{content_text[:100]}...'. Using keyword fallback", file=sys.stderr)
                     self.fallback_calls += 1
                     return fallback_rule(content), True
                 
@@ -150,42 +148,42 @@ class Classifier:
                 self.api_calls += 1
                 if label in LABELS:
                     return label, False
-                # 返回了非预期字符串，尝试修正
+                # Returned an unexpected string; try to normalize
                 upper = label.upper()
                 if upper in LABELS:
                     return upper, False
-                # API返回了无效标签，使用兜底规则
-                print(f"⚠️ API返回了无效标签: '{label}'，使用关键词兜底规则", file=sys.stderr)
+                # API returned an invalid label; use fallback
+                print(f"⚠️ API returned an invalid label: '{label}'. Using keyword fallback", file=sys.stderr)
                 self.fallback_calls += 1
                 return fallback_rule(content), True
             except (OpenAIError, asyncio.TimeoutError) as e:
                 self.errors += 1
                 if attempt == self.max_retries:
-                    # 最终兜底
-                    print(f"⚠️ API调用失败（{e.__class__.__name__}），使用关键词兜底规则", file=sys.stderr)
+                    # Final fallback
+                    print(f"⚠️ API call failed ({e.__class__.__name__}). Using keyword fallback", file=sys.stderr)
                     self.fallback_calls += 1
                     return fallback_rule(content), True
-                print(f"⚠️ API调用失败，第{attempt}次重试: {e}", file=sys.stderr)
+                print(f"⚠️ API call failed, retry {attempt}: {e}", file=sys.stderr)
                 await asyncio.sleep(delay + random.uniform(0, 0.25))
                 delay *= 2
             except Exception as e:
                 self.errors += 1
-                print(f"⚠️ 未知错误: {e}，使用关键词兜底规则", file=sys.stderr)
+                print(f"⚠️ Unexpected error: {e}. Using keyword fallback", file=sys.stderr)
                 self.fallback_calls += 1
                 return fallback_rule(content), True
         
-        # 不应该到达这里，但为了安全
+        # Should never reach here, but keep a safe fallback
         self.fallback_calls += 1
         return fallback_rule(content), True
 
-# ---- I/O & 主流程 ----
+# ---- I/O & main flow ----
 async def process_file(in_path: Path, out_path: Path, clf: Classifier):
-    # 统计信息
+    # Statistics
     total_labels = Counter()
     perspective_labels = defaultdict(Counter)
     fallback_count = 0
     
-    # 预读取计算总数
+    # Pre-read to count total items
     total = 0
     with in_path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -199,14 +197,14 @@ async def process_file(in_path: Path, out_path: Path, clf: Classifier):
             for _ in mlist:
                 total += 1
 
-    print(f"📊 开始处理，共{total}个rebuttal需要分类", file=sys.stderr)
+    print(f"📊 Starting classification for {total} rebuttals", file=sys.stderr)
     
-    # 正式处理
+    # Main processing
     with in_path.open("r", encoding="utf-8") as fin, \
          out_path.open("w", encoding="utf-8") as fout:
 
-        # 创建进度条
-        pbar = tqdm(total=total, desc="分类进度", file=sys.stderr, 
+        # Create progress bar
+        pbar = tqdm(total=total, desc="Progress", file=sys.stderr, 
                    bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]')
         
         for line in fin:
@@ -215,67 +213,67 @@ async def process_file(in_path: Path, out_path: Path, clf: Classifier):
             try:
                 paper = json.loads(line)
             except Exception as e:
-                print(f"⚠️ 解析JSON失败: {e}", file=sys.stderr)
+                print(f"⚠️ Failed to parse JSON: {e}", file=sys.stderr)
                 continue
 
             mappings = paper.get("weakness_rebuttal_mappings")
             if isinstance(mappings, list):
-                # 针对该 paper 内所有 rebuttal 并发分类
+                # Classify all rebuttals in this paper concurrently
                 tasks = []
                 idxs = []
                 for i, m in enumerate(mappings):
                     rr = (m or {}).get("rebuttal_response") or {}
                     content = rr.get("content", "")
-                    # 异步任务：获取 impact
+                    # Async task: get impact label
                     tasks.append(asyncio.create_task(clf.classify(content)))
                     idxs.append(i)
 
                 if tasks:
                     results = await asyncio.gather(*tasks)
                     for i, (impact, is_fallback) in zip(idxs, results):
-                        # 写回到 rebuttal_response 中新增 impact
+                        # Write impact back into rebuttal_response
                         if isinstance(mappings[i], dict):
                             rr = mappings[i].get("rebuttal_response")
                             if isinstance(rr, dict):
                                 rr["impact"] = impact
                             
-                            # 统计信息
+                            # Statistics
                             total_labels[impact] += 1
                             if is_fallback:
                                 fallback_count += 1
                             
-                            # 获取perspective并统计
+                            # Get perspective and update stats
                             wp = mappings[i].get("weakness_point") or {}
                             perspective = wp.get("perspective", "Unknown")
                             perspective_labels[perspective][impact] += 1
                         
                         pbar.update(1)
 
-            # 写出本行（paper 对象）
+            # Write this line (paper object)
             fout.write(json.dumps(paper, ensure_ascii=False) + "\n")
         
         pbar.close()
     
-    # 输出统计结果
+    # Print summary statistics
     print("\n" + "="*60, file=sys.stderr)
-    print("📈 分类完成！统计结果：", file=sys.stderr)
+    print("📈 Classification complete. Summary:", file=sys.stderr)
     print("="*60, file=sys.stderr)
     
-    print(f"🔧 API调用次数: {clf.api_calls}", file=sys.stderr)
-    print(f"⚠️ 兜底规则使用次数: {clf.fallback_calls} ({clf.fallback_calls/total*100:.1f}%)", file=sys.stderr)
-    print(f"❌ 错误次数: {clf.errors}", file=sys.stderr)
+    print(f"🔧 API calls: {clf.api_calls}", file=sys.stderr)
+    print(f"⚠️ Fallback used: {clf.fallback_calls} ({clf.fallback_calls/total*100:.1f}%)", file=sys.stderr)
+    print(f"❌ Errors: {clf.errors}", file=sys.stderr)
     
-    print("\n📊 总体Label分布:", file=sys.stderr)
+    print("\n📊 Overall label distribution:", file=sys.stderr)
     for label in LABELS:
         count = total_labels[label]
         print(f"  {label}: {count} ({count/total*100:.1f}%)", file=sys.stderr)
     
-    print("\n📊 各Perspective的Label分布:", file=sys.stderr)
+    print("\n📊 Label distribution by perspective:", file=sys.stderr)
     for perspective in sorted(perspective_labels.keys()):
         if perspective == "Unknown":
             continue
         total_per_perspective = sum(perspective_labels[perspective].values())
-        print(f"\n  {perspective} (总数: {total_per_perspective}):", file=sys.stderr)
+        print(f"\n  {perspective} (total: {total_per_perspective}):", file=sys.stderr)
         for label in LABELS:
             count = perspective_labels[perspective][label]
             if count > 0:
@@ -283,7 +281,7 @@ async def process_file(in_path: Path, out_path: Path, clf: Classifier):
     
     if perspective_labels["Unknown"]:
         total_unknown = sum(perspective_labels["Unknown"].values())
-        print(f"\n  Unknown Perspective (总数: {total_unknown}):", file=sys.stderr)
+        print(f"\n  Unknown Perspective (total: {total_unknown}):", file=sys.stderr)
         for label in LABELS:
             count = perspective_labels["Unknown"][label]
             if count > 0:
@@ -316,7 +314,7 @@ async def amain():
     await process_file(Path(args.in_path), Path(args.out_path), clf)
 
 if __name__ == "__main__":
-    # Windows 事件循环兼容（如需）
+    # Windows event loop compatibility (if needed)
     # import platform, asyncio
     # if platform.system().lower().startswith("win"):
     #     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

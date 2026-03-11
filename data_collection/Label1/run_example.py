@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-示例运行脚本
-演示如何使用数据集生成工具
+Example runner script
+Demonstrates how to use the dataset generation tool
 """
 
 import os
@@ -10,25 +10,25 @@ import sys
 from pathlib import Path
 
 def check_requirements():
-    """检查运行环境和文件"""
-    print("=== 检查运行环境 ===")
+    """Check the environment and required files"""
+    print("=== Checking environment ===")
     
-    # 检查Python版本
+    # Check Python version
     python_version = sys.version_info
-    print(f"Python版本: {python_version.major}.{python_version.minor}.{python_version.micro}")
+    print(f"Python version: {python_version.major}.{python_version.minor}.{python_version.micro}")
     
-    # 检查必要文件
+    # Check required files
     required_files = [
         "generate_sft_dataset.py",
         "config.py"
     ]
     
-    # 动态检查配置文件中指定的输入文件
-    try:
+    # Dynamically check the input file specified in config
+    try:  
         from config import JSONL_FILE
         required_files.append(JSONL_FILE)
     except ImportError:
-        required_files.append("iclr2024_map_merged_per_filter2.jsonl")  # 默认文件
+        required_files.append("iclr2024_map_merged_per_filter2.jsonl")  # Default file
     
     required_dirs = [
         "paper_md/iclr2024"
@@ -47,42 +47,42 @@ def check_requirements():
         if not Path(dir_path).exists():
             missing_dirs.append(dir_path)
         else:
-            # 检查目录中的文件数量
+            # Check the number of files in the directory
             md_files = list(Path(dir_path).glob("*.md"))
-            print(f"✅ {dir_path} (包含 {len(md_files)} 个.md文件)")
+            print(f"✅ {dir_path} ({len(md_files)} .md files)")
     
     if missing_files:
-        print(f"\n❌ 缺少文件: {missing_files}")
+        print(f"\n❌ Missing files: {missing_files}")
         return False
     
     if missing_dirs:
-        print(f"\n❌ 缺少目录: {missing_dirs}")
+        print(f"\n❌ Missing directories: {missing_dirs}")
         return False
     
-    print("\n✅ 所有必要文件和目录都存在")
+    print("\n✅ All required files and directories are available")
     return True
 
 def run_generation():
-    """运行数据集生成"""
-    print("\n=== 开始生成数据集 ===")
+    """Run dataset generation"""
+    print("\n=== Generating dataset ===")
     
     try:
-        # 导入并运行主脚本
+        # Import and run the main script
         from generate_sft_dataset import main
         main()
         return True
     except Exception as e:
-        print(f"❌ 生成失败: {e}")
+        print(f"❌ Generation failed: {e}")
         return False
 
 def run_test():
-    """运行测试脚本"""
-    print("\n=== 测试生成的数据集 ===")
+    """Run the test script"""
+    print("\n=== Testing generated dataset ===")
     
     try:
         from test_dataset import test_dataset_format, analyze_perspectives
         
-        # 从配置文件获取输出文件名
+        # Get the output filename from config
         try:
             from config import OUTPUT_FILE
             dataset_file = OUTPUT_FILE
@@ -94,35 +94,34 @@ def run_test():
         else:
             return False
     except Exception as e:
-        print(f"❌ 测试失败: {e}")
+        print(f"❌ Test failed: {e}")
         return False
 
 def main():
-    """主函数"""
-    print("ShareGPT格式SFT数据集生成工具")
+    """Main function"""
+    print("ShareGPT SFT Dataset Generator")
     print("=" * 50)
     
-    # 检查环境
+    # Check environment
     if not check_requirements():
-        print("\n请确保所有必要文件都存在后再运行")
+        print("\nPlease make sure all required files are available before running")
         return
     
-    # 生成数据集
+    # Generate dataset
     if not run_generation():
-        print("\n数据集生成失败，请检查错误信息")
+        print("\nDataset generation failed. Please check the error message")
         return
     
-    # 测试数据集
+    # Test dataset
     if not run_test():
-        print("\n数据集测试失败")
+        print("\nDataset test failed")
         return
     
-    print("\n🎉 数据集生成和验证完成!")
-    print("\n下一步:")
-    print("1. 检查生成的 sft_dataset_sharegpt.json 文件")
-    print("2. 根据需要调整 config.py 中的参数")
-    print("3. 将数据集用于llama-factory训练")
+    print("\n🎉 Dataset generation and validation completed!")
+    print("\nNext steps:")
+    print("1. Check the generated sft_dataset_sharegpt.json file")
+    print("2. Adjust parameters in config.py if needed")
+    print("3. Use the dataset for LLaMA-Factory training")
 
 if __name__ == "__main__":
     main()
-

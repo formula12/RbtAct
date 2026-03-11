@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-生成ShareGPT格式的SFT数据集
-用于segment级别的peer review generation任务
+Generate ShareGPT-format SFT dataset
+for segment-level peer review generation
 """
 
 import json
@@ -12,7 +12,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
-# 导入配置
+# Import config
 from config import (
     JSONL_FILE, PAPER_MD_DIR, OUTPUT_FILE, 
     SAMPLES_PER_PERSPECTIVE, MIN_CONFIDENCE, RANDOM_SEED,
@@ -20,7 +20,7 @@ from config import (
 )
 
 def load_jsonl(file_path: str) -> List[Dict]:
-    """加载JSONL文件"""
+    """Load a JSONL file"""
     data = []
     with open(file_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -30,7 +30,7 @@ def load_jsonl(file_path: str) -> List[Dict]:
     return data
 
 def load_paper_content(paper_id: str, paper_md_dir: str) -> Optional[str]:
-    """加载论文内容"""
+    """Load paper content"""
     paper_path = Path(paper_md_dir) / f"{paper_id}.md"
     if not paper_path.exists():
         return None
@@ -39,7 +39,7 @@ def load_paper_content(paper_id: str, paper_md_dir: str) -> Optional[str]:
         with open(paper_path, 'r', encoding='utf-8') as f:
             return f.read()
     except Exception as e:
-        print(f"读取论文 {paper_id} 时出错: {e}")
+        print(f"Error reading paper {paper_id}: {e}")
         return None
 
 def create_sharegpt_sample(
@@ -51,7 +51,7 @@ def create_sharegpt_sample(
     review_id: str,
     conference: str = "ICLR2024"
 ) -> Dict:
-    """创建ShareGPT格式的样本"""
+    """Create a ShareGPT-format sample"""
     
     perspective_text = PERSPECTIVE_MAP.get(perspective, perspective.lower())
     user_content = USER_REQUEST_TEMPLATE.format(
@@ -88,36 +88,36 @@ def sample_data_by_perspective(
     min_confidence: float = 0.9
 ) -> List[Dict]:
     """
-    按perspective采样数据
+    Sample data by perspective
     
     Args:
-        data: 原始数据列表
-        paper_md_dir: 论文markdown文件目录
-        samples_per_perspective: 每个perspective采样数量
-        min_confidence: 最小置信度阈值
+        data: Raw data list
+        paper_md_dir: Directory of paper markdown files
+        samples_per_perspective: Number of samples per perspective
+        min_confidence: Minimum confidence threshold
     
     Returns:
-        采样后的ShareGPT格式数据列表
+        Sampled data list in ShareGPT format
     """
     
-    # 使用配置文件中定义的perspectives
+    # Use perspectives defined in the config file
     perspectives = PERSPECTIVES
     
-    # 按perspective分组收集数据
+    # Group data by perspective
     perspective_data = defaultdict(list)
     missing_papers = set()
     
-    print("正在收集数据...")
+    print("Collecting data...")
     for paper in data:
         paper_id = paper["paper_id"]
         
-        # 检查论文文件是否存在
+        # Check whether the paper file exists
         paper_content = load_paper_content(paper_id, paper_md_dir)
         if paper_content is None:
             missing_papers.add(paper_id)
             continue
             
-        # 收集该论文的所有weakness_point
+        # Collect all weakness points for this paper
         for mapping in paper.get("weakness_rebuttal_mappings", []):
             weakness_point = mapping.get("weakness_point", {})
             confidence_score = mapping.get("confidence_score", 0.0)
@@ -139,15 +139,15 @@ def sample_data_by_perspective(
                 })
     
     if missing_papers:
-        print(f"找不到以下论文文件: {sorted(list(missing_papers))}")
-        print(f"缺失论文数量: {len(missing_papers)}")
+        print(f"Missing paper files: {sorted(list(missing_papers))}")
+        print(f"Number of missing papers: {len(missing_papers)}")
     
-    # 统计每个perspective的数据量
-    print("\n各perspective数据统计:")
+    # Show data count for each perspective
+    print("\nData count by perspective:")
     for perspective in perspectives:
-        print(f"{perspective}: {len(perspective_data[perspective])}条")
+        print(f"{perspective}: {len(perspective_data[perspective])}")
     
-    # 采样数据
+    # Sample data
     sampled_data = []
     sampling_stats = {}
     
@@ -155,26 +155,26 @@ def sample_data_by_perspective(
         available_data = perspective_data[perspective]
         
         if not available_data:
-            print(f"警告: {perspective} 没有可用数据")
+            print(f"Warning: no data available for {perspective}")
             sampling_stats[perspective] = 0
             continue
         
-        # 按论文去重 - 每篇论文最多选一条
+        # Deduplicate by paper: at most one sample per paper
         paper_to_samples = defaultdict(list)
         for sample in available_data:
             paper_to_samples[sample["paper_id"]].append(sample)
         
-        # 每篇论文选择置信度最高的一条
+        # Select the highest-confidence sample for each paper
         unique_samples = []
         for paper_id, samples in paper_to_samples.items():
             best_sample = max(samples, key=lambda x: x["confidence_score"])
             unique_samples.append(best_sample)
         
-        # 随机采样
+        # Random sampling
         sample_count = min(samples_per_perspective, len(unique_samples))
         selected_samples = random.sample(unique_samples, sample_count)
         
-        # 转换为ShareGPT格式
+        # Convert to ShareGPT format
         for sample in selected_samples:
             sharegpt_sample = create_sharegpt_sample(
                 paper_content=sample["paper_content"],
@@ -190,46 +190,46 @@ def sample_data_by_perspective(
         sampling_stats[perspective] = sample_count
         
         if sample_count < samples_per_perspective:
-            print(f"警告: {perspective} 只采集到 {sample_count} 条数据，少于目标 {samples_per_perspective} 条")
+            print(f"Warning: only collected {sample_count} samples for {perspective}, fewer than the target {samples_per_perspective}")
     
-    print(f"\n采样完成统计:")
+    print(f"\nSampling summary:")
     total_samples = 0
     for perspective in perspectives:
         count = sampling_stats.get(perspective, 0)
-        print(f"{perspective}: {count}条")
+        print(f"{perspective}: {count}")
         total_samples += count
     
-    print(f"总计: {total_samples}条")
+    print(f"Total: {total_samples}")
     
     return sampled_data
 
 def main():
-    """主函数"""
-    print(f"开始生成SFT数据集...")
-    print(f"输入文件: {JSONL_FILE}")
-    print(f"论文目录: {PAPER_MD_DIR}")
-    print(f"每个perspective采样: {SAMPLES_PER_PERSPECTIVE}条")
-    print(f"最小置信度: {MIN_CONFIDENCE}")
-    print(f"输出文件: {OUTPUT_FILE}")
+    """Main function"""
+    print(f"Starting SFT dataset generation...")
+    print(f"Input file: {JSONL_FILE}")
+    print(f"Paper directory: {PAPER_MD_DIR}")
+    print(f"Samples per perspective: {SAMPLES_PER_PERSPECTIVE}")
+    print(f"Minimum confidence: {MIN_CONFIDENCE}")
+    print(f"Output file: {OUTPUT_FILE}")
     
-    # 检查输入文件
+    # Check input paths
     if not os.path.exists(JSONL_FILE):
-        print(f"错误: 找不到输入文件 {JSONL_FILE}")
+        print(f"Error: input file not found: {JSONL_FILE}")
         return
     
     if not os.path.exists(PAPER_MD_DIR):
-        print(f"错误: 找不到论文目录 {PAPER_MD_DIR}")
+        print(f"Error: paper directory not found: {PAPER_MD_DIR}")
         return
     
-    # 加载数据
-    print("加载数据...")
+    # Load data
+    print("Loading data...")
     data = load_jsonl(JSONL_FILE)
-    print(f"加载了 {len(data)} 篇论文的数据")
+    print(f"Loaded data for {len(data)} papers")
     
-    # 设置随机种子以确保可重现性
+    # Set random seed for reproducibility
     random.seed(RANDOM_SEED)
     
-    # 采样数据
+    # Sample data
     sampled_data = sample_data_by_perspective(
         data, 
         PAPER_MD_DIR, 
@@ -237,13 +237,13 @@ def main():
         min_confidence=MIN_CONFIDENCE
     )
     
-    # 保存结果
-    print(f"\n保存数据到 {OUTPUT_FILE}...")
+    # Save results
+    print(f"\nSaving data to {OUTPUT_FILE}...")
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(sampled_data, f, ensure_ascii=False, indent=2)
     
-    print(f"数据集生成完成! 共 {len(sampled_data)} 条样本")
-    print(f"文件已保存到: {OUTPUT_FILE}")
+    print(f"Dataset generation complete! Total samples: {len(sampled_data)}")
+    print(f"Saved to: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
