@@ -8,9 +8,6 @@ weaknesses & questions in reviews and rebuttal text.
 Pipeline contains two main steps:
 1. Segment: Split complete weaknesses_and_questions into independent points
 2. Map: Map each weakness point to corresponding responses in rebuttal_text
-
-Author: Assistant
-Date: 2025-09-16
 """
 
 import json
@@ -55,7 +52,7 @@ class ReviewRebuttalMapper:
         
         # print(f"  Parsing segmentation result (length: {len(result_text)} chars)")
         
-        # 首先尝试标准的 "Point X:" 格式
+        # first try standard "Point X:" format
         pattern = r'Point\s+(\d+):\s*(.*?)(?=Point\s+\d+:|$)'
         matches = re.findall(pattern, result_text, re.DOTALL | re.IGNORECASE)
         

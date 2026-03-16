@@ -3,9 +3,6 @@ Prompt Templates for Review-Rebuttal Mapping Pipeline
 
 This module contains all the prompt templates used for segmenting review weaknesses
 and mapping them to rebuttal responses.
-
-Author: Assistant
-Date: 2025-09-16
 """
 
 from typing import List, Dict

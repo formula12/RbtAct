@@ -1,10 +1,20 @@
-# RbtAct
+﻿# RbtAct: Rebuttal as Supervision for Actionable Review Feedback Generation
 
-A comprehensive data collection, labeling and training pipeline for academic peer review generation analysis.
+<p align="center">
+  <b>Paper</b> 📄 ·
+  <a href="https://arxiv.org/abs/2603.09723">RbtAct</a>
+  &nbsp;|&nbsp;
+  <b>Dataset</b> 🤗 ·
+  <a href="https://huggingface.co/datasets/shwu22/RMR-75K">RMR-75K</a>
+  &nbsp;|&nbsp;
+  <b>Code</b> <img src="https://cdn.simpleicons.org/github/000000" alt="GitHub" width="22" /> ·
+  <a href="https://github.com/formula12/RbtAct">RbtAct</a>
+</p>
+## Overview
 
-## Project Overview
+**RbtAct** is a framework for actionable peer review feedback generation that uses author rebuttals as implicit supervision. 
 
-This project provides tools for collecting, processing, and analyzing academic paper reviews and author rebuttals from conferences like ICLR. It includes modules for:
+This **Repository** provides tools for collecting, processing, and analyzing academic paper reviews and author rebuttals from conferences like ICLR. It includes modules for:
 
 - **Data Collection**: Fetching review and rebuttal data from OpenReview
 - **Label1**: Classifying weakness points by perspective
@@ -14,30 +24,31 @@ This project provides tools for collecting, processing, and analyzing academic p
 
 ## Project Structure
 ```
-
 RbtAct/
 ├── data_collection/
-│ ├── Collection/ # Data fetching from OpenReview
-│ │ └── get_iclr.py # Main collection script
-│ ├── Label1/ # Weakness point classification
-│ │ ├── classify_weakness_points.py
-│ │ ├── config.py
-│ │ ├── generate_sft_dataset.py
-│ │ ├── openai_utils.py
-│ │ ├── run_example.py
-│ │ └── test_dataset.py
-│ ├── Label2/ # Rebuttal quality labeling
-│ │ ├── classify_rebuttals_jsonl.py
-│ │ ├── openai_utils.py
-│ │ └── openai_utils_openai.py
-│ └── Map/ # Review-Rebuttal mapping
-│ ├── openai_utils.py
-│ ├── prompts.py
-│ └── review_rebuttal_mapper.py
-├── training/
-│ ├── llama_8b_review_per_sft.yaml
-│ └── llama_8b_review_per_dpo.yaml
-
+|   ├── Collection/  # Data fetching from OpenReview
+|   |   └── get_iclr.py  # Main collection script
+|   |
+|   ├── Label1/  # Weakness point classification
+|   |   ├── classify_weakness_points.py
+|   |   ├── config.py
+|   |   ├── generate_sft_dataset.py
+|   |   ├── openai_utils.py
+|   |   ├── run_example.py
+|   |   └── test_dataset.py
+|   │
+|   ├── Label2/  # Rebuttal quality labeling
+|   |   ├── classify_rebuttals_jsonl.py
+|   |   └── openai_utils.py
+|   |
+|   └── Map/  # Review-Rebuttal mapping
+|       ├── openai_utils.py
+|       ├── prompts.py
+|       └── review_rebuttal_mapper.py
+|
+└────── training/
+    ├── llama_8b_review_per_sft.yaml
+    └── llama_8b_review_per_dpo.yaml
 ```
 ## Installation
 
@@ -306,3 +317,4 @@ If you find this project useful in your research, please cite:
   url={https://arxiv.org/abs/2603.09723},
 }
 ```
+
