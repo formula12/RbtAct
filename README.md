@@ -7,7 +7,7 @@
   <b>Dataset</b> 🤗 ·
   <a href="https://huggingface.co/datasets/shwu22/RMR-75K">RMR-75K</a>
   &nbsp;|&nbsp;
-  <b>Code</b> <img src="https://cdn.simpleicons.org/github/000000" alt="GitHub" width="22" /> ·
+  <b>Code</b> <img src="https://cdn.simpleicons.org/github/000000" alt="GitHub" width="15" /> ·
   <a href="https://github.com/formula12/RbtAct">RbtAct</a>
 </p>
 
